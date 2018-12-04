@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	grammar "github.com/github/linguist/tools/grammars/proto"
+	"github.com/github/linguist/tools/grammars/sublime"
 	"github.com/golang/protobuf/proto"
 	pb "gopkg.in/cheggaaa/pb.v1"
 	yaml "gopkg.in/yaml.v2"
@@ -190,6 +191,20 @@ func (conv *Converter) writeJSONFile(path string, rule *grammar.Rule) error {
 	return enc.Encode(rule)
 }
 
+func (conv *Converter) writeSublimeFile(path string, rule *grammar.Rule) error {
+	sub, err := sublime.Convert(rule)
+	if err != nil {
+		return err
+	}
+
+	y, err := yaml.Marshal(sub)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path, y, 0666)
+}
+
 func (conv *Converter) WriteJSON(rulePath string) error {
 	if err := os.MkdirAll(rulePath, os.ModePerm); err != nil {
 		return err
@@ -206,6 +221,11 @@ func (conv *Converter) WriteJSON(rulePath string) error {
 		for scope, file := range repo.Files {
 			p := path.Join(rulePath, scope+".json")
 			if err := conv.writeJSONFile(p, file.Rule); err != nil {
+				return err
+			}
+
+			p = path.Join(rulePath, scope+".sublime-syntax")
+			if err := conv.writeSublimeFile(p, file.Rule); err != nil {
 				return err
 			}
 		}
